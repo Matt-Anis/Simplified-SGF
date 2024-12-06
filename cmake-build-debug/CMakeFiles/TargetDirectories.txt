@@ -1,0 +1,3 @@
+C:/Users/Toshiba/DONNEES/Informatique/2 eme anne/SFSD/Projet/Simplified-SGF/cmake-build-debug/CMakeFiles/Simplified_SGF.dir
+C:/Users/Toshiba/DONNEES/Informatique/2 eme anne/SFSD/Projet/Simplified-SGF/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/Toshiba/DONNEES/Informatique/2 eme anne/SFSD/Projet/Simplified-SGF/cmake-build-debug/CMakeFiles/rebuild_cache.dir
