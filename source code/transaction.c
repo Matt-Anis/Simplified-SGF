@@ -1,7 +1,11 @@
+//
+// Created by Toshiba on 12/8/2024.
+//
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "transaction.h"
 
 
 const char *names[] = {
@@ -108,28 +112,18 @@ const char *names[] = {
     "Juan Singh"
 };
 
-
-typedef struct Ttime {
-    int year;
-    int month;
-    int day;
-    int hour;
-    int minute;
-    int second;
-} Ttime;
-
-typedef struct Ttransaction {
-    char ID[37]; //of 25 digits
-    char senderName[20];
-    char receiverName[20];
-    unsigned long long senderAccountNo;
-    unsigned long long receiverAccountNo;
-    bool success;
-    char errorCode[35];
-    unsigned long long transactionNumber;
-    int amount;
-    Ttime time;
-} Ttransaction;
+// Define an array of possible error codes of a transaction
+const char *errorCodes[] = {
+    "ERR001: Insufficient Funds",
+    "ERR002: Account Not Found",
+    "ERR003: Transaction Limit Exceeded",
+    "ERR004: Unauthorized Access",
+    "ERR005: Invalid Account Number",
+    "ERR006: Invalid Amount",
+    "ERR007: System Maintenance",
+    "ERR008: Timeout Error",
+    "ERR009: Invalid Transaction Type",
+};
 
 //to generate unique IDs, the function generates random IDs in format long with a very long length to unsure uniqueness
 void generateUUID(char *uuid) {
@@ -156,21 +150,8 @@ void generateRandomName(char *name) {
     name[19] = '\0'; // Null-terminate
 }
 
-const char *generateErrorCode() {
-    // Define an array of possible error codes
-    const char *errorCodes[] = {
-        "ERR001: Insufficient Funds",
-        "ERR002: Account Not Found",
-        "ERR003: Transaction Limit Exceeded",
-        "ERR004: Unauthorized Access",
-        "ERR005: Invalid Account Number",
-        "ERR006: Invalid Amount",
-        "ERR007: System Maintenance",
-        "ERR008: Timeout Error",
-        "ERR009: Invalid Transaction Type",
-    };
 
-    // srand(time(NULL)+ rand());
+const char *generateErrorCode() {
     int randomIndex = rand() % (sizeof(errorCodes) / sizeof(errorCodes[0]));
 
     static char result[36];
@@ -230,11 +211,24 @@ void printTransaction(Ttransaction transaction) {
     printf("| %llu |", transaction.transactionNumber);
 }
 
-int main(void) {
-    srand(time(NULL));
+void createTransaction(char ID[37], //of 36 char
+                       char senderName[20],
+                       char receiverName[20],
+                       unsigned long long senderAccountNo,
+                       unsigned long long receiverAccountNo,
+                       bool success,
+                       char errorCode[35],
+                       unsigned long long transactionNumber,
+                       int amount,
+                       Ttime time) {
     Ttransaction transaction;
-    transaction = randomTransaction();
-    printTransaction(transaction);
-
-    return 0;
+    transaction.amount = amount;
+    transaction.senderAccountNo = senderAccountNo;
+    transaction.receiverAccountNo = receiverAccountNo;
+    transaction.success = success;
+    transaction.time = time;
+    strcpy(transaction.errorCode, errorCode);
+    strcpy(transaction.senderName, senderName);
+    strcpy(transaction.receiverName, receiverName);
+    transaction.transactionNumber = transactionNumber;
 }

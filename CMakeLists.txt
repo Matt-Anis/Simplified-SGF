@@ -3,4 +3,4 @@ project(Simplified_SGF C)
 
 set(CMAKE_C_STANDARD 23)
 
-add_executable(Simplified_SGF main.c)
+add_executable(Simplified_SGF "source code/main.c" "source code/transaction.c")
