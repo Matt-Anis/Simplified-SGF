@@ -1,7 +1,19 @@
 # ninja log v6
 44	2062	7553612021946697	CMakeFiles/Simplified_SGF.dir/main.c.obj	1a19c15339fff448
-3	238	7553885616654611	build.ninja	beea5cf131220b0
-106	235	7553884713675595	Simplified_SGF.exe	8f6f809281b9aa4d
-4	95	7553885109743250	CMakeFiles/Simplified_SGF.dir/source_code/main.c.obj	cbb91a40d1af17c6
-6	112	7553885714319176	CMakeFiles/Simplified_SGF.dir/source_code/transaction.c.obj	7825da61e9d243e5
-113	236	7553885715392621	Simplified_SGF.exe	612937b1085f589
+3	238	7555285597518768	build.ninja	beea5cf131220b0
+179	399	7554744674659530	Simplified_SGF.exe	612937b1085f589
+9	178	7554744672959202	CMakeFiles/Simplified_SGF.dir/source_code/main.c.obj	cbb91a40d1af17c6
+89	1244	7554644490921086	CMakeFiles/Simplified_SGF.dir/source_code/transaction.c.obj	7825da61e9d243e5
+15	354	7555414069296830	CMakeFiles/Simplified_SGF.dir/source_code/transaction/transaction.c.obj	31dbefa00d0efdc6
+9	133	7555414494568298	CMakeFiles/Simplified_SGF.dir/source_code/main.c.obj	cbb91a40d1af17c6
+134	860	7555414495818852	Simplified_SGF.exe	4d55338e06280687
+10	133	7555416439994157	CMakeFiles/Simplified_SGF.dir/source_code/main.c.obj	cbb91a40d1af17c6
+134	310	7555416441229559	Simplified_SGF.exe	4d55338e06280687
+13	193	7555430085028495	CMakeFiles/Simplified_SGF.dir/source_code/main.c.obj	cbb91a40d1af17c6
+194	444	7555430086839444	Simplified_SGF.exe	4d55338e06280687
+12	190	7555430289233358	CMakeFiles/Simplified_SGF.dir/source_code/main.c.obj	cbb91a40d1af17c6
+191	463	7555430291034873	Simplified_SGF.exe	4d55338e06280687
+8	159	7557086675581875	CMakeFiles/Simplified_SGF.dir/source_code/main.c.obj	cbb91a40d1af17c6
+159	495	7557086677093287	Simplified_SGF.exe	4d55338e06280687
+6	100	7557086779481685	CMakeFiles/Simplified_SGF.dir/source_code/main.c.obj	cbb91a40d1af17c6
+100	247	7557086780427435	Simplified_SGF.exe	4d55338e06280687

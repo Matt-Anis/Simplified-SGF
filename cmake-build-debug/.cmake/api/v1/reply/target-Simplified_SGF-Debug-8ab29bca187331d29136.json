@@ -106,7 +106,7 @@
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
-			"path" : "source code/transaction.c",
+			"path" : "source code/transaction/transaction.c",
 			"sourceGroupIndex" : 0
 		}
 	],

@@ -7,7 +7,7 @@
 #include <time.h>
 #include "transaction.h"
 
-
+// a list of names, to automatically fill the files
 const char *names[] = {
     "Donovan Archer",
     "Kadence Rosario",
@@ -112,7 +112,7 @@ const char *names[] = {
     "Juan Singh"
 };
 
-// Define an array of possible error codes of a transaction
+// an array of possible error codes of a transaction
 const char *errorCodes[] = {
     "ERR001: Insufficient Funds",
     "ERR002: Account Not Found",
