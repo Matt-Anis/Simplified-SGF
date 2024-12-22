@@ -15,10 +15,5 @@ typedef struct file{
 } file;
 
 
-typedef struct disk {
-  int BlocsNumber;
-  int BlockingFactor;
-} disk;
-
-void initDisk(disk *disk, int blocsNumber, int blockingFactor, char name[]);
+void initDisk(int blocsNumber, int blockingFactor, char name[]);
 #endif //DISK_H

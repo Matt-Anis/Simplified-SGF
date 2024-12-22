@@ -17,14 +17,13 @@ void checkName(char *name) {
 }
 
 
-void initDisk(disk *disk, int blocsNumber, int blockingFactor, char name[]){
+void initDisk(int blocsNumber, int blockingFactor, char name[]){
   FILE *file;
   TallocationTable allocationTable;
 
 
   checkName(name);
   file = fopen(name, "wb");
-  initTable(&allocationTable, blocsNumber, blockingFactor);
+  allocationTable = initTable(blocsNumber, blockingFactor);
   writeAllocationTable(file, allocationTable);
-
   }

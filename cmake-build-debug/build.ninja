@@ -55,12 +55,6 @@ build CMakeFiles/Simplified_SGF.dir/source_code/main.c.obj: C_COMPILER__Simplifi
   OBJECT_DIR = CMakeFiles\Simplified_SGF.dir
   OBJECT_FILE_DIR = CMakeFiles\Simplified_SGF.dir\source_code
 
-build CMakeFiles/Simplified_SGF.dir/source_code/transaction/transaction.c.obj: C_COMPILER__Simplified_SGF_unscanned_Debug C$:/Users/Toshiba/DONNEES/Informatique/2$ eme$ anne/SFSD/Projet/Simplified-SGF/source$ code/transaction/transaction.c || cmake_object_order_depends_target_Simplified_SGF
-  DEP_FILE = CMakeFiles\Simplified_SGF.dir\source_code\transaction\transaction.c.obj.d
-  FLAGS = -g -std=gnu2x -fdiagnostics-color=always
-  OBJECT_DIR = CMakeFiles\Simplified_SGF.dir
-  OBJECT_FILE_DIR = CMakeFiles\Simplified_SGF.dir\source_code\transaction
-
 
 # =============================================================================
 # Link build statements for EXECUTABLE target Simplified_SGF
@@ -69,7 +63,7 @@ build CMakeFiles/Simplified_SGF.dir/source_code/transaction/transaction.c.obj: C
 #############################################
 # Link the executable Simplified_SGF.exe
 
-build Simplified_SGF.exe: C_EXECUTABLE_LINKER__Simplified_SGF_Debug CMakeFiles/Simplified_SGF.dir/source_code/main.c.obj CMakeFiles/Simplified_SGF.dir/source_code/transaction/transaction.c.obj
+build Simplified_SGF.exe: C_EXECUTABLE_LINKER__Simplified_SGF_Debug CMakeFiles/Simplified_SGF.dir/source_code/main.c.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\Simplified_SGF.dir

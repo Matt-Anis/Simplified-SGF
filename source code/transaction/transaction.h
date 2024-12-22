@@ -14,7 +14,7 @@ typedef struct Ttime {
 } Ttime;
 
 typedef struct Ttransaction {
-    bool occupied; // this indicates later if the bloc is used or not, and will also be used for logical suppression
+    // bool occupied; // this indicates later if the bloc is used or not, and will also be used for logical suppression
     int next;
     // if the global organization of a file is a linked list, this will indicate the index of the next element (next bloc in the file)
     char ID[37]; //of 36 char
