@@ -1,0 +1,599 @@
+=============================== Ttime: Defition de la structure Ttime, qui va etre utilise dans Ttransaction ===========
+
+
+
+
+
+=============================== Ttransaction:  definiton de la structure Ttransaction ==================================
+
+occupied sert a indiquer si le record est utiliser ou libre, et va servir pour la suppression logique de ce record
+
+ID est l'identifiant unique de 36 charcateres, unique a chaque Transaction
+
+senderName,         --
+receerName,           |
+senderAccountNo,      |
+receverAccountNo,     |      sont des informatios de la transaction qui n'affecte pas la structure, ou la manipulation
+success,              | ==>  de la MS
+errorCode,            |      sauf dans le cas ou c'est utiliser pour etre un cle de recherche
+transactionNumber,    |
+ammount,              |
+time,               --
+
+========================================================================================================================
+
+
+
+
+
+===================================== const *name[]:  Definition d'une list de nom =====================================
+
+elle va servire pour generer aleatoirement une transaction
+
+========================================================================================================================
+
+
+
+
+
+============================= cont *errorcodes[] definiton des codes d'erreur des transaction ==========================
+
+elle va servire pour generer aleatoirement une transaction
+
+========================================================================================================================
+
+
+
+
+
+================================================= generateUUID:  =======================================================
+
+parametre:
+1. char: uuid -> passage par address
+
+type de retour:
+void
+
+la fonction genere un UUID (Universally Unique Identifier)
+
+ex:
+ID = 123e4567-e89b-12d3-a456-426614174000
+
+elle sera utiliser pour generer aleatoirement des IDs pour les transaction
+
+Ce ID servira plus tard comme cle de recherche
+
+========================================================================================================================
+
+
+
+
+
+=============================================== generateRandomName =====================================================
+
+parametre:
+1. char: name -> bpassage par addreess
+
+type de retour:
+void
+
+la fonction choisi aleatoirement un nom depuis la liste de nom defini precedamenet
+
+========================================================================================================================
+
+
+
+
+
+=============================================== generateErrorCode ======================================================
+
+parametre:
+(rien)
+
+type de retour:
+char: result[36];
+
+cette fonction choisi alatoirement un code d'erreur depuis la list de code d'erreur defini precedament
+
+========================================================================================================================
+
+
+
+
+
+================================================= randomTransaction ====================================================
+
+parametre:
+(rien)
+
+type de retour:
+Ttransaction
+
+fonctionnement:
+1. defini une variable transaction de type Ttransacrion qui servira pour retour
+2. utilise la fonction generateUUID pour generer l'ID de la transaction
+3. utilise la fonction generateRandomName pour generer un nom aleatoir pour sender et recever
+4. utilise la fonction rand pour generer des sendeerAccount, recevierAccount et transactionNumber aleatoir
+5. met l'annee a 2024 et choisi aleatoirement une date pour la transaction
+6. genere un amount aleatoir
+7. genere aleatoirement un etat de succes, si echec elle utilise generateErrorCode, si non erroCode recois "success"
+6. retour transaction
+
+========================================================================================================================
+
+
+
+
+
+=================================================== printTransaction ===================================================
+
+parametre:
+Ttransaction transaction
+
+type de retour:
+void
+
+fonctionnement:
+1.affiche les details de la transaction
+
+========================================================================================================================
+
+
+
+
+
+=============================================== createTransaction ======================================================
+
+parameteres:
+1. char ID[37]
+2. char senderName[20]
+3. char receiverName[20]
+4. unsigned long long senderAccountNo
+5. unsigned long long receiverAccountNo
+6. bool success,char errorCode[35],unsigned long long transactionNumber,int amount,Ttime time
+
+type de retour:
+Ttransaction transaction;
+
+fonctionnement:
+1. cree une nouvel variable et prend les parametres et les remplit dans cette variable puis la retourne
+
+utilisation:
+sera utiliser pour la saisi d'une transaction specifique avec le clavier
+
+========================================================================================================================
+
+
+
+
+
+================================================== enum blocType =======================================================
+
+m -> metadonne
+f -> fichier
+t -> table
+u -> indetermine
+
+utilisation:
+sera utiliser dans la structure de Tbloc
+
+========================================================================================================================
+
+
+
+
+
+================================================= struct Tbloc =========================================================
+
+occupied -> indique si un bloc est utiliser ou non
+type -> type du bloc (f,m,u,t)
+
+utilisation:
+sera utiliser dans la table d'allocation, pour indique si un bloc de la memoire secondaire est occupe ou non
+si oui -> indique son type
+
+========================================================================================================================
+
+
+
+
+
+
+================================== enum Global_organization, Internal_organization =====================================
+
+Global :
+contiguious -> indique que les blocs d'un fichier sont contigue
+linked -> indique que les blocs d'un fichier peuvent etre separe
+
+Internal:
+ordered -> indique que le fichier est ordone
+unordered -> indique que le fichier est non ordonee
+
+utilisation:
+sera utiliser pour manipuler/ecrire/lire/creer les fichier dans la memoire secondaire
+
+========================================================================================================================
+
+
+
+
+
+===================================================== struct metaData ==================================================
+
+
+file_size_bloc -> indique la taille du fichier en bloc
+file_name[50] -> le nom du fichier (taille maximum 49 char, pour eviter plus de complication)
+file_size_record -> la taille du fichier en record
+first_bloc_adress -> l'address du premier bloc
+globale_organization
+internal_organization
+*address_array -> pointe vers un vecteur qui contient les adress des blocs d'un fichier
+
+========================================================================================================================
+
+
+
+
+
+========================================== struct TallocationTable =====================================================
+
+tableSize -> vu que la taille de la table est variante alors il est preferable de stocker cette taille afin d'eviter
+             de la recalculer a chaque fois
+
+bufferSize -> la tailledu buffer est calculer plus tard par une fonction special pour assurer une taille optimal du
+              buffer pour la manipulation de la MS
+
+*array -> pointe vers un vecteur de "Tbloc" qui indiquera l'etat des blocs de la MS
+
+blockingFactor -> le nombre maximum d'enregistrement par bloc de la MS
+
+blocTotal -> le nombre total des blocs dans la MS (inclus la table d'allocation)
+
+========================================================================================================================
+
+
+
+
+
+============================================= find_buffer_size =========================================================
+
+parametre:
+facteur de blockage
+
+type de retour:
+size_t
+
+fonctionnement:
+1. calcule la taille bu bloc de la MS et l'enregistre dans une variable MS_bloc_size
+   la taille du bloc est le facteur de blocage * la taille de la transaction
+2. intialise la taille du buffer a MS_bloc_size -1, pour eviter que plus tard dans le calcule, la taille du buffer ne
+   la meme taille du bloc de la MS, car MS_bloc_size satisfait la condition de recherche
+3. tant que la taille du bloc de MS n'est pas devisible par le taille du buffer
+   OU
+   la taille du buffer n'est pas devisible par la taille de la transaction
+   ALORS
+   on decrement la taille du buffer par 1
+4. retourne la taille du buffer trouver
+   REMARQUE:
+   la taille minimum est la meme taille que taille de transaction, car taille de transactiuon satisfait la condition
+   d'arret
+
+========================================================================================================================
+
+
+
+
+
+======================================================= initTable ======================================================
+
+parameteres:
+blocNumber -> nombre de bloc dans la MS
+facteur de blockage
+
+type de retour:
+TallocationTable
+
+fonctionnement:
+1. creer une variable de type TallocationTable pour la retourner plus tard
+2. passe les parametere blocNumber et blocking facteur au champ correspendent de allocation_table
+3. alloue a table.array l'espace necessaire celon le nombre de bloc de la MS
+4. change la premiere case du champ "array" a occupe et le type: t, pour indiquer que le premier bloc est occupe par
+   la table d'allocation (pas necessaire)
+5. initialise le rest du vecteur a partir de l'indice 1 a vide et de type indetermine
+6. calcule et stock la taille de la table d'allocation dans le champ "tableSize"
+7. calcule la taille du buffer et le stock dans le champs correcspendant
+8. retourn la table
+
+========================================================================================================================
+
+
+
+
+
+==================================================== print_table =======================================================
+
+parametre:
+allocation table
+
+type de retour:
+void
+
+utilisation:
+affiche la table d'allocation
+
+REMARQUE:
+beacoup plus orionte au debeuggage
+
+========================================================================================================================
+
+
+
+
+
+========================================== writeMetadata ===============================================================
+
+paramteres:
+allocation table
+pointeur vers le fichier
+met_data -> a ecrir
+position -> l'address logique ou le fichier de meta donne va etre ecrit
+
+type de retour:
+void
+
+fonctionnement:
+1. calcule la taille bu bloc de la MS et le stock
+2. deplace la tete de lecture vers l'emplacement ou le fichier de metadonne sera ecrit
+3. calcule la taille du meta donne et la stock dans une variable
+   (vu qu'elle a une taille variable et dependente du nombre de bloc allouer au fichier)
+4. initialise le buffer a la meme taille que le bloc de la MS
+5. initialise un compteur de bytes ecrits
+6. copie chaque champs dans le buffer et incremente le compteur des bytes ecrits
+7. rempli le reste du buffer avec des 0 en utilisant la fonction memset
+8. ecrit le buffer dans la MS
+
+
+========================================================================================================================
+
+
+
+
+
+==================================================== getMetaData =======================================================
+
+parametres:
+File
+table
+position -> position du ficher de meta donnes dans la MS
+
+type de retour:
+metaData
+
+fontionnement:
+1. declare une variable de type meta data qui va etre retourner plus tard
+2. calcule et stock la taille du bloc de la MS
+3. deplace la tete de lecture vers la position ou le fichier de meta donne est ecrit
+4. lit un par un les champs de meta donne et les stock dans la variable temporaire
+   (DANS L'ORDRE DANS LAQUELLE IL ETAIT ECRIT)
+5. retourne meta data
+
+========================================================================================================================
+
+
+
+
+
+=========================================== writeAllocationTable =======================================================
+
+parametres:
+File
+table
+
+type de retour:
+void
+
+fonctionnement:
+1. deplace la tete de lecture vers le debut de la MS
+2. calcaule te sauvegarde la taille de la table d'allocation
+3. declare un compteur des bytes ecrits et l'initialise a 0
+4. copie les champs de la table vers le buffer et increment le compteur des bytes ecrits celon la taille dy champs
+5. remplis le reste des bytes non ecrit avec des 0
+6. ecrit la table dans le fichier
+
+========================================================================================================================
+
+
+
+
+
+================================================ getAllocationTable ====================================================
+
+parametres:
+FiLe
+
+type de retour:
+allocation table
+
+fonctionnement:
+1. deplace la tete de lecture vers le debut du fichier
+2. declare une variable de tye allocationTable qui va etre retourner
+3. lit le premier element ecrit dans la MS qui la taille de la table d'allocation
+4. lit les champs un par un, dans le meme ordre dans les quelle il etait ecrit
+5. alloue un espace memoire pour le vecteur de la table.array
+6. lit les blocs du array
+7. retourne la table
+
+========================================================================================================================
+
+
+
+
+
+=============================================== isAvailable_linked =====================================================
+
+parametres:
+la table d'allocation
+la taille fu fichier en bloc
+
+type de retour:
+bool
+
+fonctionnement:
+1. initialise le nombre de bloc dispo a 0
+2. parcour "table.array" et pour chaque bloc trouver on increment le compteur
+3. retourne la valeur de la comparaison "nombre de bloc trouve >= (taille du fichier +1 )
+   car il faut prendre en considiration qu'il faut un autre bloc pour stocker le fichier de meta donne
+
+========================================================================================================================
+
+
+
+
+
+============================================== isAvailable_contiguous ==================================================
+
+parametres;
+allocation table
+la taille du fichier contigue
+
+type de retour:
+bool
+
+fonctionnement:
+1. initialise le compteur de blocs contigues libre a 0
+2. si la taille du fichier en bloc + 1 est supperieur au nomrbe total de bloc dans la MS -1 retourne faux
+   (-1 pour supprimer la table du compte)
+3. on parcor "table.array" et on verifi si le bloc avec l'adress i (i de la boucle) est libre
+   si libre alors:
+        tant que le bloc est libre, on passe au bloc suivant et on increment le nombre de bloc libre trouve
+   si le nombre de bloc contigue trouve est strictement superieur a la taille alors retourne vrai
+   si non:
+        si le nombre de bloc trouve est egal a la taille du fichier alors :
+            verifie si il y a d'autre bloc libre
+            si oui:
+            retourne vrai
+            si non retourne faux
+   si non si le nombre bloc contigue disponible est inferieur alors renitilaise le compteur
+
+========================================================================================================================
+
+
+
+
+
+============================================= isCompactable ============================================================
+
+parametres:
+allocation table
+
+type de retour:
+bool
+
+fonctionnement:
+1. init une variable gap a faux -> cette varaiable va servire a indique si il ya une gap
+2. parcour "table.array" et verifie si il trouve un bloc non occupe alors il marque gap = true
+3. si gap est egale a true et le bloc est occuoe oar un fichie retourne vrai -> compactable
+4. si la gap est vrai et le bloc est occupe par meta donne retourne faux, car les meta donne sont toujour a la fin et
+   donc MS compacte deja
+
+
+========================================================================================================================
+
+
+
+
+
+================================================== create_file =========================================================
+
+parameters:
+FILE
+file name //taille fix
+mode d'organization globale
+mode d'organization interne
+la taille du fichier en bloc
+taille de la table d'allocation
+
+type de retour:
+int -> l'address logique ou est stocker le fichier de meta donne
+
+fontionnement:
+1. initialise une variable de type entier pour stocker l'adress du fichier meta deta et la retourne plus tards
+2. calcule et stock la taille du bloc de la MS (j'aurais vraiment dus ajouter un chmaps dans la table d'allocation pour
+   cela)
+3. enregsitre le nom du fichier dans la meta donne
+4. enregistre la taille du fihcier dans le champs correspendent de la meta donne
+5. on va a la fin de la MS et on cherche depuis la fin un bloc libre pour y stocker le fichier de metadonne
+   et met a jour l'address de la meta donne par le premier bloc libre trouve en partent depuis la fin
+6. on met a jour la table d'allocation pour indiquer que le bloc alloue au fihcier de metadonne est occupe par m
+7. intialise la taille du fichier en record a 0
+8. passe le mod d'organization interne au champs correspendant dans la meta donne
+9. si le mod d'organization globale est contigus alors
+
+   8.1. initialise le compteur de bloc libre trouver a 0
+   8.2. si le bloc est vide alors incremente le compteur si non renit le compteur a 0
+        si le nombre de bloc dispo est equivalent a la taille du fichier alors on sauvegarde l'address du premier bloc
+        et on sort de la boucle de recherche d'espace contigous pour le fichier
+   8.3. on met a jour la table d'allocation, on marquent les blocs alloues au fichier comme occupes avec des fichier
+   8.4. on allouent le vecteur d'address des blocs de fichier du fichier de meta Donne avec la taille du fichier
+   8.5. on met a jour le vecteur d'address du meta data
+   8.6. on met a jour la table d'allocation dans la Memoire secondaire
+   8.7. on ecrit le fichier de metadonne dans la memoire secondare
+   8.8. retourn l'addres du fichier du meta donne
+
+10. si le mode d'organitaion est de type chaine
+
+    10.1. on alloue le vecteur d'address de meta data (j'aurais dut le faire avant le if else du type d'organization
+          globale)
+    10.2. initislse un compteur pour parcourir le vecteur d'adress
+    10.3. initialise une variable temporaire avce le nombre de bloc du fichier
+    10.4. on parcour le vecteur de la table d'allocation et pour chaque case vide trouver en fait:
+
+        ..1. si c'est le premier bloc qu'on la trouver un bloc libre alors on met a jour lechamps correcpandant de
+                metadonne
+        ..2. decrement le nombre de bloc restant pour le quel on doit trouver ds blocs libres
+        ..3. on MAJ la table d'allocation -> indiquant que ce bloc est occupe par un fichier
+        ..4. on MAJ le vecteur d'address de metadata et on increment le compteur avec lequel en parcour ce vecteur
+
+11. return metadata adress
+
+
+REMARQUE:
+LES FONCTION DE VERIFICATION SI IL Y D'ESPACE DISPONIBLE POUR STOCKER LE FICHIER DOIT ETRE APPELER AVANT D'APPELER
+CETTE FONCTION DE CREATION
+
+
+========================================================================================================================
+
+
+
+
+
+================================================ initDisk ==============================================================
+
+parametres:
+FILE
+blocNumber
+blockingFactor
+name
+
+type de retour:
+TallocationTable
+
+fonctionnement:
+1. declare la variable de type Tallocation table qui va etre retourner plus tard
+2. ouvre le fichier en mode wb+ (ecreture binaire plus lecture) -> ceci va permettre de reecrire le fichier si il est
+   est deja defini
+3. on itilaise la table d'allocation avec la fonction initTable
+4. ecrit la table d'allocation en MS
+5. creer une transaction vide qui va etre ecrite dans la MS
+6. deplace le curseur pour etre juste apres le bloc de la table d'allocation
+7. pour le nombre de bloc dans la MS -1 (car on calcule aussi le bloc de la table)
+   ecrit la bloc avec des trnsaction vide
+8. retourne la table
+
+
+========================================================================================================================
+
+
+
+
