@@ -49,8 +49,8 @@ cmake_ninja_workdir = C$:/Users/Toshiba/DONNEES/Informatique/2$ eme$ anne/SFSD/P
 
 build cmake_object_order_depends_target_Simplified_SGF: phony || .
 
-build CMakeFiles/Simplified_SGF.dir/source_code/main.c.obj: C_COMPILER__Simplified_SGF_unscanned_Debug C$:/Users/Toshiba/DONNEES/Informatique/2$ eme$ anne/SFSD/Projet/Simplified-SGF/source$ code/main.c || cmake_object_order_depends_target_Simplified_SGF
-  DEP_FILE = CMakeFiles\Simplified_SGF.dir\source_code\main.c.obj.d
+build CMakeFiles/Simplified_SGF.dir/source_code/final_-1.c.obj: C_COMPILER__Simplified_SGF_unscanned_Debug C$:/Users/Toshiba/DONNEES/Informatique/2$ eme$ anne/SFSD/Projet/Simplified-SGF/source$ code/final$ -1.c || cmake_object_order_depends_target_Simplified_SGF
+  DEP_FILE = CMakeFiles\Simplified_SGF.dir\source_code\final_-1.c.obj.d
   FLAGS = -g -std=gnu2x -fdiagnostics-color=always
   OBJECT_DIR = CMakeFiles\Simplified_SGF.dir
   OBJECT_FILE_DIR = CMakeFiles\Simplified_SGF.dir\source_code
@@ -63,7 +63,7 @@ build CMakeFiles/Simplified_SGF.dir/source_code/main.c.obj: C_COMPILER__Simplifi
 #############################################
 # Link the executable Simplified_SGF.exe
 
-build Simplified_SGF.exe: C_EXECUTABLE_LINKER__Simplified_SGF_Debug CMakeFiles/Simplified_SGF.dir/source_code/main.c.obj
+build Simplified_SGF.exe: C_EXECUTABLE_LINKER__Simplified_SGF_Debug CMakeFiles/Simplified_SGF.dir/source_code/final_-1.c.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\Simplified_SGF.dir

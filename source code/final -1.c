@@ -1,3 +1,5 @@
+// Ajout des nouvelles fonctions d'interface utilisateur
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -833,7 +835,7 @@ void printMS(FILE *file, TallocationTable table) {
     printf("##################\n");
     printf("##################\n");
     printf("##################\n");
-    printf("################## ----> Allocation table");
+    printf("################## ----> Allocation table\n");
     printf("##################\n");
     printf("##################\n");
     printf("##################\n");
@@ -845,10 +847,10 @@ void printMS(FILE *file, TallocationTable table) {
             print_bloc(array[i].occupied, array[i].fileName, array[i].Nb);
         }
         else if (array[i].occupied && array[i].type == m) {
-            print_bloc(true, array[i].fileName, -1);
+            print_bloc(false, array[i].fileName, -1);
         }
         else {
-            print_bloc(false, "", 0);
+            print_bloc(true, "", 0);
         }
     }
 
@@ -856,8 +858,662 @@ void printMS(FILE *file, TallocationTable table) {
 }
 
 
+// Structure pour stocker les statistiques du système
+typedef struct SystemStats {
+    int totalBlocks;
+    int freeBlocks;
+    int usedBlocks;
+    int fragmentedBlocks;
+} SystemStats;
+
+// Fonction pour obtenir les statistiques actuelles du système
+SystemStats getSystemStats(TallocationTable table) {
+    SystemStats stats = {0, 0, 0, 0};
+    bool foundUsed = false;
+
+    stats.totalBlocks = table.blocTotal;
+
+    for(int i = 0; i < table.blocTotal; i++) {
+        if(!table.array[i].occupied) {
+            stats.freeBlocks++;
+            if(foundUsed) {
+                stats.fragmentedBlocks++;
+            }
+        } else {
+            stats.usedBlocks++;
+            foundUsed = true;
+        }
+    }
+
+    return stats;
+}
+
+// Fonction pour vérifier si un nom de fichier existe déjà
+bool fileExists(FILE* file, TallocationTable table, const char* filename) {
+    for(int i = 0; i < table.blocTotal; i++) {
+        if(table.array[i].occupied && table.array[i].type == m) {
+            metaData meta = getMetaData(file, table, i);
+            if(strcmp(meta.file_name, filename) == 0) {
+                return true;
+            }
+            free(meta.address_array); // Libération de la mémoire
+        }
+    }
+    return false;
+}
+
+// Fonction pour rechercher un fichier par son nom et retourner son meta_data_address
+int findFileByName(FILE* file, TallocationTable table, const char* filename) {
+    for(int i = 0; i < table.blocTotal; i++) {
+        if(table.array[i].occupied && table.array[i].type == m) {
+            metaData meta = getMetaData(file, table, i);
+            if(strcmp(meta.file_name, filename) == 0) {
+                free(meta.address_array);
+                return i;
+            }
+            free(meta.address_array);
+        }
+    }
+    return -1;
+}
+
+// Fonction pour renommer un fichier
+bool renameFile(FILE* file, TallocationTable table, const char* oldName, const char* newName) {
+    if(fileExists(file, table, newName)) {
+        return false; // Le nouveau nom existe déjà
+    }
+
+    int metaAddress = findFileByName(file, table, oldName);
+    if(metaAddress == -1) {
+        return false; // Ancien fichier non trouvé
+    }
+
+    metaData meta = getMetaData(file, table, metaAddress);
+    strncpy(meta.file_name, newName, 49);
+    meta.file_name[49] = '\0';
+
+    writeMetadata(table, file, meta, metaAddress);
+    free(meta.address_array);
+    return true;
+}
+
+// Fonction pour supprimer un fichier
+bool deleteFile(FILE* file, TallocationTable* table, const char* filename) {
+    int metaAddress = findFileByName(file, *table, filename);
+    if(metaAddress == -1) {
+        return false;
+    }
+
+    TallocationTable table2;
+    table2 = *table;
+    metaData meta = getMetaData(file, table2, metaAddress);
+
+    // Libérer tous les blocs du fichier
+    for(int i = 0; i < meta.file_size_bloc; i++) {
+        table->array[meta.address_array[i]].occupied = false;
+        table->array[meta.address_array[i]].type = u;
+    }
+
+    // Libérer le bloc de métadonnées
+    table->array[metaAddress].occupied = false;
+    table->array[metaAddress].type = u;
+
+    writeAllocationTable(file, *table);
+    free(meta.address_array);
+    return true;
+}
+
+// Structure pour stocker le résultat d'une recherche
+typedef struct SearchResult {
+    bool found;
+    int blockNumber;
+    int offset;
+    Ttransaction transaction;
+} SearchResult;
+
+// Fonction pour rechercher un enregistrement par ID
+SearchResult searchTransactionById(FILE* file, TallocationTable table, const char* filename, const char* id) {
+    SearchResult result = {false, -1, -1};
+    int metaAddress = findFileByName(file, table, filename);
+
+    if(metaAddress == -1) {
+        return result;
+    }
+
+    metaData meta = getMetaData(file, table, metaAddress);
+    size_t bloc_size = table.blockingFactor * sizeof(Ttransaction);
+    Ttransaction* buffer = malloc(bloc_size);
+
+    for(int i = 0; i < meta.file_size_bloc; i++) {
+        int blockAddr = meta.address_array[i];
+        fseek(file, blockAddr * bloc_size, SEEK_SET);
+        fread(buffer, bloc_size, 1, file);
+
+        for(int j = 0; j < table.blockingFactor; j++) {
+            if(buffer[j].occupied && strcmp(buffer[j].ID, id) == 0) {
+                result.found = true;
+                result.blockNumber = blockAddr;
+                result.offset = j;
+                result.transaction = buffer[j];
+                free(buffer);
+                free(meta.address_array);
+                return result;
+            }
+        }
+    }
+
+    free(buffer);
+    free(meta.address_array);
+    return result;
+}
+
+// Fonction pour insérer un enregistrement
+bool insertTransaction(FILE* file, TallocationTable* table, const char* filename, Ttransaction transaction) {
+    int metaAddress = findFileByName(file, *table, filename);
+    if(metaAddress == -1) {
+        return false;
+    }
+
+
+    TallocationTable table2 = *table;
+    metaData meta = getMetaData(file, table2, metaAddress);
+    size_t bloc_size = table->blockingFactor * sizeof(Ttransaction);
+    Ttransaction* buffer = malloc(bloc_size);
+
+    // Pour organisation interne ordonnée
+    if(meta.internal_organization == ordered) {
+        // TODO: Implémenter l'insertion ordonnée
+    } else {
+        // Insertion non ordonnée - chercher le premier espace libre
+        for(int i = 0; i < meta.file_size_bloc; i++) {
+            int blockAddr = meta.address_array[i];
+            fseek(file, blockAddr * bloc_size, SEEK_SET);
+            fread(buffer, bloc_size, 1, file);
+
+            for(int j = 0; j < table->blockingFactor; j++) {
+                if(!buffer[j].occupied) {
+                    buffer[j] = transaction;
+                    buffer[j].occupied = true;
+
+                    fseek(file, blockAddr * bloc_size, SEEK_SET);
+                    fwrite(buffer, bloc_size, 1, file);
+
+                    meta.file_size_record++;
+                    writeMetadata(*table, file, meta, metaAddress);
+
+                    free(buffer);
+                    free(meta.address_array);
+                    return true;
+                }
+            }
+        }
+    }
+
+    free(buffer);
+    free(meta.address_array);
+    return false; // Pas d'espace trouvé
+}
+
+// Fonction pour la suppression logique
+bool logicalDelete(FILE* file, TallocationTable table, const char* filename, const char* id) {
+    SearchResult search = searchTransactionById(file, table, filename, id);
+    if(!search.found) {
+        return false;
+    }
+
+    size_t bloc_size = table.blockingFactor * sizeof(Ttransaction);
+    Ttransaction* buffer = malloc(bloc_size);
+
+    fseek(file, search.blockNumber * bloc_size, SEEK_SET);
+    fread(buffer, bloc_size, 1, file);
+
+    buffer[search.offset].occupied = false;
+
+    fseek(file, search.blockNumber * bloc_size, SEEK_SET);
+    fwrite(buffer, bloc_size, 1, file);
+
+    free(buffer);
+    return true;
+}
+
+// Fonction pour vider la MS
+void clearMS(FILE* file, TallocationTable* table) {
+    // Réinitialiser la table d'allocation
+    for(int i = 1; i < table->blocTotal; i++) {
+        table->array[i].occupied = false;
+        table->array[i].type = u;
+    }
+
+    writeAllocationTable(file, *table);
+
+    // Réécrire des blocs vides
+    size_t bloc_size = table->blockingFactor * sizeof(Ttransaction);
+    Ttransaction emptyTransaction = {0};
+
+    for(int i = 1; i < table->blocTotal; i++) {
+        fseek(file, i * bloc_size, SEEK_SET);
+        for(int j = 0; j < table->blockingFactor; j++) {
+            fwrite(&emptyTransaction, sizeof(Ttransaction), 1, file);
+        }
+    }
+}
+
+// Fonction de compactage de la MS
+void compactMS(FILE* file, TallocationTable* table) {
+    size_t bloc_size = table->blockingFactor * sizeof(Ttransaction);
+    unsigned char* buffer = malloc(bloc_size);
+    if (!buffer) {
+        fprintf(stderr, "Erreur d'allocation mémoire pour le compactage\n");
+        return;
+    }
+
+    // Parcourir tous les blocs pour trouver les fichiers
+    for (int i = 1; i < table->blocTotal; i++) {
+        // Si on trouve un bloc de métadonnées
+        if (table->array[i].occupied && table->array[i].type == m) {
+
+            TallocationTable table2 = *table;
+            metaData meta = getMetaData(file, table2, i);
+            int new_start = -1;
+            int consecutive_free = 0;
+
+            // Pour organisation contiguë uniquement
+            if (meta.globale_organization == contiguous) {
+                // Chercher le premier espace libre suffisant depuis le début
+                for (int j = 1; j < i && new_start == -1; j++) {
+                    if (!table->array[j].occupied) {
+                        consecutive_free = 1;
+                        int k;
+                        // Vérifier s'il y a assez d'espace contigu
+                        for (k = j + 1; k < i && !table->array[k].occupied; k++) {
+                            consecutive_free++;
+                        }
+                        if (consecutive_free >= meta.file_size_bloc) {
+                            new_start = j;
+                        }
+                    }
+                }
+
+                // Si on a trouvé un nouvel emplacement
+                if (new_start != -1) {
+                    // Déplacer chaque bloc du fichier
+                    for (int j = 0; j < meta.file_size_bloc; j++) {
+                        int old_pos = meta.address_array[j];
+                        int new_pos = new_start + j;
+
+                        // Lire l'ancien bloc
+                        fseek(file, old_pos * bloc_size, SEEK_SET);
+                        fread(buffer, bloc_size, 1, file);
+
+                        // Écrire dans le nouveau bloc
+                        fseek(file, new_pos * bloc_size, SEEK_SET);
+                        fwrite(buffer, bloc_size, 1, file);
+
+                        // Mettre à jour la table d'allocation
+                        table->array[old_pos].occupied = false;
+                        table->array[old_pos].type = u;
+                        table->array[new_pos].occupied = true;
+                        table->array[new_pos].type = f;
+
+                        // Mettre à jour le tableau d'adresses
+                        meta.address_array[j] = new_pos;
+                    }
+
+                    // Mettre à jour le premier bloc
+                    meta.first_bloc_adress = new_start;
+                    writeMetadata(*table, file, meta, i);
+                }
+            }
+            free(meta.address_array);
+        }
+    }
+
+    free(buffer);
+    writeAllocationTable(file, *table);
+}
+
+// Fonction de défragmentation d'un fichier
+bool defragmentFile(FILE* file, TallocationTable* table, const char* filename) {
+    int metaAddress = findFileByName(file, *table, filename);
+    if (metaAddress == -1) {
+        return false;
+    }
+
+    TallocationTable table2 = *table;
+    metaData meta = getMetaData(file, table2, metaAddress);
+    size_t bloc_size = table->blockingFactor * sizeof(Ttransaction);
+    Ttransaction* buffer = malloc(table->blockingFactor * sizeof(Ttransaction));
+    if (!buffer) {
+        free(meta.address_array);
+        return false;
+    }
+
+    // Créer un buffer temporaire pour stocker tous les enregistrements valides
+    Ttransaction* temp_records = malloc(meta.file_size_record * sizeof(Ttransaction));
+    if (!temp_records) {
+        free(buffer);
+        free(meta.address_array);
+        return false;
+    }
+
+    int valid_count = 0;
+
+    // Lire tous les enregistrements valides
+    for (int i = 0; i < meta.file_size_bloc; i++) {
+        fseek(file, meta.address_array[i] * bloc_size, SEEK_SET);
+        fread(buffer, bloc_size, 1, file);
+
+        for (int j = 0; j < table->blockingFactor; j++) {
+            if (buffer[j].occupied) {
+                temp_records[valid_count++] = buffer[j];
+            }
+        }
+    }
+
+    // Mettre à jour le nombre d'enregistrements
+    meta.file_size_record = valid_count;
+
+    // Réorganiser les enregistrements
+    int record_index = 0;
+    for (int i = 0; i < meta.file_size_bloc && record_index < valid_count; i++) {
+        // Initialiser le buffer avec des enregistrements vides
+        for (int j = 0; j < table->blockingFactor; j++) {
+            buffer[j].occupied = false;
+        }
+
+        // Remplir le bloc avec les enregistrements valides
+        for (int j = 0; j < table->blockingFactor && record_index < valid_count; j++) {
+            buffer[j] = temp_records[record_index++];
+        }
+
+        // Écrire le bloc
+        fseek(file, meta.address_array[i] * bloc_size, SEEK_SET);
+        fwrite(buffer, bloc_size, 1, file);
+    }
+
+    // Libérer la mémoire
+    free(buffer);
+    free(temp_records);
+
+    // Mettre à jour les métadonnées
+    writeMetadata(*table, file, meta, metaAddress);
+    free(meta.address_array);
+
+    return true;
+}
+
+
+// Fonction principale du menu
+// Previous code remains the same until mainMenu()
+
+void mainMenu() {
+    int choice;
+    FILE* file = NULL;
+    TallocationTable table;
+    char filename[50];
+    char id[37];
+    SystemStats stats;
+    bool initialized = false;
+
+    do {
+        printf("\nMenu Principal:\n");
+        printf("1. Initialiser la memoire secondaire\n");
+        printf("2. Creer un fichier\n");
+        printf("3. Afficher l'etat de la MS\n");
+        printf("4. Afficher les metadonnees\n");
+        printf("5. Rechercher un enregistrement\n");
+        printf("6. Inserer un enregistrement\n");
+        printf("7. Supprimer un enregistrement\n");
+        printf("8. Defragmenter un fichier\n");
+        printf("9. Supprimer un fichier\n");
+        printf("10. Renommer un fichier\n");
+        printf("11. Compactage de la MS\n");
+        printf("12. Vider la MS\n");
+        printf("0. Quitter\n");
+        printf("Votre choix: ");
+
+        scanf("%d", &choice);
+        getchar(); // Clear input buffer
+
+        if (!initialized && choice != 1 && choice != 0) {
+            printf("Vous devez d'abord initialiser la memoire secondaire!\n");
+            continue;
+        }
+
+        switch(choice) {
+            case 1: {
+                if (initialized) {
+                    printf("La memoire secondaire est deja initialisee!\n");
+                    break;
+                }
+                char msName[50];
+                int blocNumber, blockingFactor;
+
+                printf("Nom du fichier MS: ");
+                fgets(msName, 50, stdin);
+                msName[strcspn(msName, "\n")] = 0;
+
+                printf("Nombre de blocs: ");
+                scanf("%d", &blocNumber);
+
+                printf("Facteur de blocage: ");
+                scanf("%d", &blockingFactor);
+
+                table = initDisk(file, blocNumber, blockingFactor, msName);
+                file = fopen(msName, "rb+");
+                if (!file) {
+                    printf("Erreur lors de l'initialisation!\n");
+                    break;
+                }
+                initialized = true;
+                printf("Memoire secondaire initialisee avec succes!\n");
+                break;
+            }
+
+            case 2: {
+                char fileName[50];
+                int fileSize;
+                int orgChoice;
+                enum Globale_organization globOrg;
+                enum Internal_organization intOrg;
+
+                printf("Nom du fichier: ");
+                fgets(fileName, 50, stdin);
+                fileName[strcspn(fileName, "\n")] = 0;
+
+                if (fileExists(file, table, fileName)) {
+                    printf("Ce nom de fichier existe deja!\n");
+                    break;
+                }
+
+                printf("Taille en blocs: ");
+                scanf("%d", &fileSize);
+
+                printf("Organisation globale (1: Contigue, 2: Non-contigue): ");
+                scanf("%d", &orgChoice);
+                globOrg = (orgChoice == 1) ? contiguous : linked;
+
+                printf("Organisation interne (1: Ordonnee, 2: Non-ordonnee): ");
+                scanf("%d", &orgChoice);
+                intOrg = (orgChoice == 1) ? ordered : unordered;
+
+                if (globOrg == contiguous && !isAvailable_contiguous(table, fileSize)) {
+                    printf("Espace contigu non disponible!\n");
+                    break;
+                }
+                else if (globOrg == linked && !isAvailable_linked(table, fileSize)) {
+                    printf("Espace non contigu non disponible!\n");
+                    break;
+                }
+
+                int metaAddress = create_file(file, fileName, globOrg, intOrg, fileSize, table);
+                if (metaAddress != -1) {
+                    printf("Fichier cree avec succes!\n");
+                    table = getAllocationTable(file);
+                }
+                break;
+            }
+
+            case 3: {
+                printMS(file, table);
+                break;
+            }
+
+            case 4: {
+                printf("Nom du fichier: ");
+                fgets(filename, 50, stdin);
+                filename[strcspn(filename, "\n")] = 0;
+
+                int metaAddress = findFileByName(file, table, filename);
+                if (metaAddress == -1) {
+                    printf("Fichier non trouve!\n");
+                    break;
+                }
+
+                metaData meta = getMetaData(file, table, metaAddress);
+                printf("\nMetadonnees du fichier %s:\n", filename);
+                printf("Taille en blocs: %d\n", meta.file_size_bloc);
+                printf("Nombre d'enregistrements: %d\n", meta.file_size_record);
+                printf("Premier bloc: %d\n", meta.first_bloc_adress);
+                printf("Organisation globale: %s\n", meta.globale_organization == contiguous ? "Contigue" : "Non-contigue");
+                printf("Organisation interne: %s\n", meta.internal_organization == ordered ? "Ordonnee" : "Non-ordonnee");
+                printf("Adresses des blocs: ");
+                for (int i = 0; i < meta.file_size_bloc; i++) {
+                    printf("%d ", meta.address_array[i]);
+                }
+                printf("\n");
+                free(meta.address_array);
+                break;
+            }
+
+            case 5: {
+                printf("Nom du fichier: ");
+                fgets(filename, 50, stdin);
+                filename[strcspn(filename, "\n")] = 0;
+
+                printf("ID de la transaction: ");
+                fgets(id, 37, stdin);
+                id[strcspn(id, "\n")] = 0;
+
+                SearchResult result = searchTransactionById(file, table, filename, id);
+                if (result.found) {
+                    printf("\nTransaction trouvee:\n");
+                    printf("Bloc: %d, Offset: %d\n", result.blockNumber, result.offset);
+                    printTransaction(result.transaction);
+                    printf("\n");
+                } else {
+                    printf("Transaction non trouvee!\n");
+                }
+                break;
+            }
+
+            case 6: {
+                printf("Nom du fichier: ");
+                fgets(filename, 50, stdin);
+                filename[strcspn(filename, "\n")] = 0;
+
+                Ttransaction newTrans = randomTransaction();
+                if (insertTransaction(file, &table, filename, newTrans)) {
+                    printf("Transaction inseree avec succes!\n");
+                    table = getAllocationTable(file);
+                } else {
+                    printf("Erreur lors de l'insertion!\n");
+                }
+                break;
+            }
+
+            case 7: {
+                printf("Nom du fichier: ");
+                fgets(filename, 50, stdin);
+                filename[strcspn(filename, "\n")] = 0;
+
+                printf("ID de la transaction: ");
+                fgets(id, 37, stdin);
+                id[strcspn(id, "\n")] = 0;
+
+                if (logicalDelete(file, table, filename, id)) {
+                    printf("Transaction supprimee avec succes!\n");
+                } else {
+                    printf("Transaction non trouvee!\n");
+                }
+                break;
+            }
+
+            case 8: {
+                // TODO: Implement defragmentation
+                printf("Fonctionnalite en cours de developpement.\n");
+                break;
+            }
+
+            case 9: {
+                printf("Nom du fichier a supprimer: ");
+                fgets(filename, 50, stdin);
+                filename[strcspn(filename, "\n")] = 0;
+
+                if (deleteFile(file, &table, filename)) {
+                    printf("Fichier supprime avec succes!\n");
+                } else {
+                    printf("Fichier non trouve!\n");
+                }
+                break;
+            }
+
+            case 10: {
+                char newName[50];
+                printf("Ancien nom: ");
+                fgets(filename, 50, stdin);
+                filename[strcspn(filename, "\n")] = 0;
+
+                printf("Nouveau nom: ");
+                fgets(newName, 50, stdin);
+                newName[strcspn(newName, "\n")] = 0;
+
+                if (renameFile(file, table, filename, newName)) {
+                    printf("Fichier renomme avec succes!\n");
+                } else {
+                    printf("Erreur lors du renommage!\n");
+                }
+                break;
+            }
+
+            case 11: {
+                if (isCompactable(table)) {
+                    TallocationTable *newTable = &table;
+                    compactMS(file, newTable);
+                    printf("Compactage necessaire mais non implemente.\n");
+                } else {
+                    printf("Compactage non necessaire.\n");
+                }
+                break;
+            }
+
+            case 12: {
+                char confirm;
+                printf("Etes-vous sur de vouloir vider la MS? (o/n): ");
+                scanf(" %c", &confirm);
+                if (confirm == 'o' || confirm == 'O') {
+                    clearMS(file, &table);
+                    printf("MS videe avec succes!\n");
+                }
+                break;
+            }
+
+            case 0: {
+                if (file) {
+                    fclose(file);
+                }
+                printf("Au revoir!\n");
+                break;
+            }
+
+            default:
+                printf("Choix invalide!\n");
+        }
+    } while (choice != 0);
+}
+
 int main() {
-
-
-    return 1;
+    srand(time(NULL));  // Initialize random seed
+    mainMenu();
+    return 0;
 }
