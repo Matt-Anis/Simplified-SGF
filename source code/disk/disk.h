@@ -1,8 +1,7 @@
 //
 // Created by Toshiba on 12/12/2024.
 //
-#include<stdio.h>
-#include<string.h>
+
 #include "../allocation table/allocationTable.h"
 #include "../transaction/transaction.h"
 #ifndef DISK_H
